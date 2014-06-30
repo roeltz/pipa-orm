@@ -177,6 +177,17 @@ abstract class Entity implements HasPrimaryKey {
 	}
 
 	function delete() {
+		$descriptor = self::getDescriptor();
+		foreach($descriptor->cascaded as $property) {
+			$items = $this->bring($property);
+			if ($descriptor->isRelationToOne($items)) {
+				$items->delete();
+			} else {
+				foreach($items as $item) {
+					$item->delete();
+				}
+			}
+		}
 		self::getMappingStrategy()->delete($this);
 	}
 

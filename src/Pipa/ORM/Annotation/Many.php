@@ -8,4 +8,5 @@ class Many extends Annotation {
 	public $fk;
 	public $order;
 	public $where;
+	public $property;
 }

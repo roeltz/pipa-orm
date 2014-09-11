@@ -168,9 +168,9 @@ class Descriptor {
 		$this->pk[] = $property;
 	}
 
-	function addRelationToMany($property, $class, $fk, $order = null, $where = null) {
+	function addRelationToMany($property, $class, $fk, $order = null, $where = null, $subproperty = null) {
 		$class = $this->normalizeNamespace($class);
-		$this->many[$property] = compact('class', 'fk', 'order', 'where');
+		$this->many[$property] = compact('class', 'fk', 'order', 'where', 'subproperty');
 	}
 
 	function addRelationToOne($property, $class, $fk = null) {

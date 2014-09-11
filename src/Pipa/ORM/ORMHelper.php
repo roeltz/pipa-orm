@@ -75,8 +75,11 @@ abstract class ORMHelper {
 
 			$criteria->where(Restrictions::eqAll($fk));
 			
-			$value = $criteria
-				->queryAll();
+			if ($subproperty = $many['subproperty']) {
+				$value = $criteria->queryProperty($subproperty);
+			} else {
+				$value = $criteria->queryAll();
+			}
 
 			return $value;
 		}

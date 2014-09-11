@@ -136,7 +136,7 @@ class AnnotationFactory implements DescriptorFactory {
 			$descriptor->addOrderByDefault($property, $order->value);
 
 		if ($many = call_user_func(array($reader, $readerMethod), $class, $member, 'Many'))
-			$descriptor->addRelationToMany($property, $many->class, $many->fk, $many->order, $many->where);
+			$descriptor->addRelationToMany($property, $many->class, $many->fk, $many->order, $many->where, $many->property);
 
 		if ($one = call_user_func(array($reader, $readerMethod), $class, $member, 'One'))
 			$descriptor->addRelationToOne($property, $one->class, $one->fk);

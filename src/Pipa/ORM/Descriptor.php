@@ -98,7 +98,7 @@ class Descriptor {
 	function __construct($class) {
 		$this->class = $class;
 		$this->namespace = preg_replace('/[^\\\\]+$/', '', $class);
-		
+
 		$parent = get_parent_class($class);
 		if (is_subclass_of($parent, 'Pipa\ORM\Entity')) {
 			$this->parent = self::getInstance($parent);
@@ -224,7 +224,7 @@ class Descriptor {
 	function getPropertyName($backendName) {
 		return array_search($backendName, $this->backendNames);
 	}
-	
+
 	function getRelationClass($property) {
 		if ($class = @$this->one[$property]['class']);
 		elseif ($class = @$this->many[$property]['class']);
@@ -243,7 +243,7 @@ class Descriptor {
 		}
 		return $descriptors;
 	}
-	
+
 	function hasBackendName($property) {
 		return isset($this->backendNames[$property]);
 	}
@@ -256,7 +256,7 @@ class Descriptor {
 	}
 
 	function isCompound($property) {
-		return isset($this->one[$property]) && count($this->one[$property]['fk']) > 1;
+		return isset($this->one[$property]) && is_array($this->one[$property]['fk']) && count($this->one[$property]['fk']) > 1;
 	}
 
 	function isCompoundPK() {

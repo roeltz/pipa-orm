@@ -113,6 +113,17 @@ class ORMCriteria extends CriteriaDecorator {
 			return $this->processSingle($record);
 		}
 	}
+	
+	function querySingleOrFail() {
+		$result = $this->querySingle();
+		
+		if ($result === null) {
+			$class = $this->descriptor->class;
+			throw new NotFoundException("Entity of class $class not found");
+		} else {
+			return $result;
+		}
+	}
 
 	function querySingleWithInstance(Entity $instance, $throw = true) {
 		$criteria = $this->mappingStrategy->expand($this);

@@ -153,7 +153,7 @@ abstract class ORMHelper {
 				}
 			} elseif (!$many) {
 				$field = $descriptor->getBackendName($property);
-				$value = $record[$field];
+				$value = @$record[$field];
 			}
 
 			if (!$compound) {

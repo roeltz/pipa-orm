@@ -6,6 +6,7 @@ use Pipa\Data\Criteria;
 use Pipa\Data\CriteriaDecorator;
 use Pipa\Data\Criterion;
 use Pipa\Data\Restrictions;
+use Pipa\Data\Util\CallbackCursor;
 use Pipa\ORM\Exception\NotFoundException;
 
 class ORMCriteria extends CriteriaDecorator {
@@ -22,7 +23,7 @@ class ORMCriteria extends CriteriaDecorator {
 		$this->mappingStrategy = $mappingStrategy;
 		$mappingStrategy->initialize($this);
 	}
-	
+
 	function __clone() {
 		parent::__clone();
 		if ($this->bring) {
@@ -31,7 +32,7 @@ class ORMCriteria extends CriteriaDecorator {
 			}
 		}
 	}
-	
+
 	function add(Criterion $criterion) {
 		if ($criterion instanceof Bring) {
 			$this->bring($criterion);
@@ -40,9 +41,9 @@ class ORMCriteria extends CriteriaDecorator {
 		}
 		return $this;
 	}
-	
+
 	function bring($property, $_ = null) {
-		$criteria = new Bring($property, $this);			
+		$criteria = new Bring($property, $this);
 		$this->bring[] = $criteria;
 
 		if ($_ === true) {
@@ -53,7 +54,7 @@ class ORMCriteria extends CriteriaDecorator {
 			return $this;
 		}
 	}
-	
+
 	function indexBy($property = null) {
 		if (!$property)
 			$property = $this->descriptor->pk;
@@ -86,6 +87,24 @@ class ORMCriteria extends CriteriaDecorator {
 		return $this->processAll($criteria->getCriteria()->queryAll());
 	}
 
+	function queryCursor() {
+		$criteria = $this->mappingStrategy->expand($this);
+		$criteria->setDefaultOrder();
+		$cursor = $criteria->getCriteria()->queryCursor();
+
+		return new CallbackCursor(function($eof) use($cursor){
+			$cursor->next();
+
+			if ($cursor->valid()) {
+				$item = $cursor->current();
+				$item = $this->processSingle($item);
+				return $item;
+			} else {
+				return $eof;
+			}
+		});
+	}
+
 	function queryField($field = null) {
 		return $this->queryProperty($field ? $field : $this->fields[0], true);
 	}
@@ -113,10 +132,10 @@ class ORMCriteria extends CriteriaDecorator {
 			return $this->processSingle($record);
 		}
 	}
-	
+
 	function querySingleOrFail() {
 		$result = $this->querySingle();
-		
+
 		if ($result === null) {
 			$class = $this->descriptor->class;
 			throw new NotFoundException("Entity of class $class not found");
@@ -185,14 +204,14 @@ class ORMCriteria extends CriteriaDecorator {
 				call_user_func_array(array($instance, $invokation[0]), $invokation[1]);
 			}
 		}
-		
+
 		return $instance;
 	}
 
 	protected function resolveClass(array $record) {
 		return $this->mappingStrategy->resolveClass($this->descriptor, $record);
 	}
-	
+
 	protected function setDefaultOrder() {
 		if (!$this->order) {
 			foreach($this->descriptor->orderByDefault as $field=>$type) {

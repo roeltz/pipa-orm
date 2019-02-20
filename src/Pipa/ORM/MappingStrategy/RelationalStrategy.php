@@ -34,6 +34,7 @@ class RelationalStrategy extends SimpleStrategy {
 				|| $c instanceof Order
 				|| $c instanceof Aggregate) {
 
+				$c = clone $c;
 				$operandName = isset($c->a) ? "a" : "field";
 
 				list($field, $lastDescriptor, $joinFieldPairs) = $self->getElementsForPath($c->{$operandName}->name, $descriptor);

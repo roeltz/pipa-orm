@@ -14,6 +14,7 @@ class ORMCriteria extends CriteriaDecorator {
 	public $bring;
 	public $index;
 	public $invocations = array();
+	public $map;
 	protected $descriptor;
 	protected $mappingStrategy;
 
@@ -65,6 +66,11 @@ class ORMCriteria extends CriteriaDecorator {
 	function invoke($method, array $args = array()) {
 		$this->invocations[] = array($method, $args);
         return $this;
+	}
+
+	function map($method, array $args = array()) {
+		$this->map = array($method, $args);
+		return $this;
 	}
 
 	function getDescriptor() {
@@ -203,6 +209,10 @@ class ORMCriteria extends CriteriaDecorator {
 			foreach($this->invocations as $invokation) {
 				call_user_func_array(array($instance, $invokation[0]), $invokation[1]);
 			}
+		}
+
+		if ($this->map) {
+			$instance = call_user_func_array(array($instance, $this->map[0]), $this->map[1]);
 		}
 
 		return $instance;

@@ -65,7 +65,7 @@ class ORMCriteria extends CriteriaDecorator {
 
 	function invoke($method, array $args = array()) {
 		$this->invocations[] = array($method, $args);
-        return $this;
+		return $this;
 	}
 
 	function map($method, array $args = array()) {
@@ -82,10 +82,15 @@ class ORMCriteria extends CriteriaDecorator {
 		return $criteria->getCriteria()->count();
 	}
 
-    function aggregate(Aggregate $aggregate) {
-        $criteria = $this->mappingStrategy->expand($this);
-        return $criteria->getCriteria()->aggregate($aggregate);
-    }
+	function aggregate(Aggregate $aggregate) {
+		$criteria = $this->mappingStrategy->expand($this);
+		return $criteria->getCriteria()->aggregate($aggregate);
+	}
+
+	function pageCount() {
+		$criteria = $this->mappingStrategy->expand($this);
+		return $criteria->getCriteria()->pageCount();
+	}
 
 	function queryAll() {
 		$criteria = $this->mappingStrategy->expand($this);

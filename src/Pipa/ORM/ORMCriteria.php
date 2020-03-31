@@ -87,9 +87,9 @@ class ORMCriteria extends CriteriaDecorator {
 		return $criteria->getCriteria()->aggregate($aggregate);
 	}
 
-	function pageCount() {
+	function pageCount($size) {
 		$criteria = $this->mappingStrategy->expand($this);
-		return $criteria->getCriteria()->pageCount();
+		return $criteria->getCriteria()->pageCount($size);
 	}
 
 	function queryAll() {

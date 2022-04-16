@@ -2,7 +2,6 @@
 
 namespace Pipa\ORM\MappingStrategy;
 use Pipa\Data\Aggregate;
-use Pipa\Data\Criteria;
 use Pipa\Data\Expression;
 use Pipa\Data\Expression\ComparissionExpression;
 use Pipa\Data\Expression\JunctionExpression;
@@ -36,41 +35,45 @@ class RelationalStrategy extends SimpleStrategy {
 
 				$c = clone $c;
 				$operandName = isset($c->a) ? "a" : "field";
+				$path = $c->{$operandName}->name;
 
-				list($field, $lastDescriptor, $joinFieldPairs) = $self->getElementsForPath($c->{$operandName}->name, $descriptor);
+				list($field, $lastDescriptor, $joinFieldPairs) = $self->getElementsForPath($path, $descriptor);
 
 				$originalField = $c->{$operandName};
 				$c->{$operandName} = $field;
 
 				if ($c instanceof ComparissionExpression) {
-
 					if ($c->b instanceof Field) {
 						list($otherField, $otherLastDescriptor, $otherJoinFieldPairs) = $self->getElementsForPath($c->b->name, $descriptor);
 						$c->b = $otherField;
 
-						foreach($otherJoinFieldPairs as $joinFieldPair) {
+						foreach($otherJoinFieldPairs as list($a, $b, $joinType)) {
 							foreach($criteria->collection->joins as $join) {
-								if ($join->collection == $joinFieldPair[1]->collection) {
+								if ($join->collection == $b->collection) {
 									continue 2;
 								}
 							}
-							$criteria->collection->join($joinFieldPair[1]->collection, Restrictions::eqf($joinFieldPair[0], $joinFieldPair[1]));
+							$criteria->collection->join($b->collection, Restrictions::eqf($a, $b), $joinType);
 						}
 					} elseif ($c->b instanceof Entity) {
 						$pkValues = ORMHelper::getPKValues($c->b);
+
 						if (count($pkValues) == 1) {
 							$c->b = reset($pkValues);
 						} else {
 							$fk = array();
 							$pkValues = array_values($pkValues);
+
 							foreach((array) $lastDescriptor->one[$field->name]->fk as $i=>$k) {
 								$fk[$k] = $pkValues[$i];
 							}
-							$c = Restrict::eqAll($fk);
+
+							$c = Restrictions::eqAll($fk);
 						}
 					}
 				} elseif ($c instanceof ListExpression) {
 					$values = array();
+
 					foreach($c->values as $v) {
 						if ($v instanceof Entity) {
 							$pkval = ORMHelper::getPKValues($v);
@@ -78,28 +81,23 @@ class RelationalStrategy extends SimpleStrategy {
 						}
 						$values[] = $v;
 					}
+
 					$c = new ListExpression($c->operator, $field, $values);
 				} else {
 					$c->field = $field;
 				}
 				
-				if ($c instanceof Order)
-					$joinType = Join::TYPE_LEFT;
-				else
-					$joinType = Join::TYPE_INNER;
-
-				foreach($joinFieldPairs as $joinFieldPair) {
+				foreach($joinFieldPairs as list($a, $b, $joinType)) {
 					foreach($criteria->collection->joins as $join) {
-						if ($join->collection == $joinFieldPair[1]->collection) {
+						if ($join->collection == $b->collection) {
 							continue 2;
 						}
 					}
-					$criteria->collection->join($joinFieldPair[1]->collection, Restrictions::eqf($joinFieldPair[0], $joinFieldPair[1]), $joinType);
+					$criteria->collection->join($b->collection, Restrictions::eqf($a, $b), $c instanceof Order ? Join::TYPE_LEFT : $joinType);
 				}
 			}
 
 			return $c;
-
 		});
 
 		$criteria->collection->alias = "c1";
@@ -107,20 +105,25 @@ class RelationalStrategy extends SimpleStrategy {
 		$criteria->order = $expressions[1];
 		$optional = $expressions[2];
 
-		if (is_array($criteria->fields))
-			foreach($criteria->fields as $field)
-				if (!$field->collection || $field->collection->name == $criteria->collection->name)
+		if (is_array($criteria->fields)) {
+			foreach($criteria->fields as $field) {
+				if (!$field->collection || $field->collection->name == $criteria->collection->name) {
 					$field->collection = $criteria->collection;
+				}
+			}
+		}
 
 		return $criteria;
 	}
 
 	function getCollection(Descriptor $descriptor, array $previous = array()) {
 		$key = join(">>", array_merge(array_map(function($d){ return $d['descriptor']->class; }, $previous), array($descriptor->class)));
+
 		if (!isset($this->collectionCache[$key])) {
 			$this->collectionCache[$key] = clone $descriptor->collection;
 			$this->collectionCache[$key]->alias = "c".count($this->collectionCache);
 		}
+
 		return $this->collectionCache[$key];
 	}
 
@@ -131,28 +134,42 @@ class RelationalStrategy extends SimpleStrategy {
 
 	function getElementsForPath($path, Descriptor $descriptor, array $previous = array(), array $joins = array()) {
 		$components = explode(".", $path);
+
 		if (count($components) == 1) {
+			$optional = $path[0] === "?";
+			$joinType = $optional ? Join::TYPE_LEFT : Join::TYPE_INNER;
+			$path = ltrim($path, "?");
 			list($field) = $this->getElementsForProperty($path, $descriptor, $previous);
+
 			if ($previous) {
 				$prev = end($previous);
 				$pk = $descriptor->getBackendPK();
-				$joins[] = array($prev['field'], new Field(reset($pk), $this->getCollection($descriptor, $previous)));
+				$joins[] = array($prev['field'], new Field(reset($pk), $this->getCollection($descriptor, $previous)), $joinType);
 			}
+
 			return array($field, $descriptor, $joins);
 		} else {
-			list($field) = $this->getElementsForProperty($components[0], $descriptor, $previous);
-			if (isset($descriptor->one[$components[0]])) {
-				$nextDescriptor = Descriptor::getInstance($descriptor->one[$components[0]]['class']);
+			$firstComponent = $components[0];
+			$optional = $firstComponent[0] === "?";
+			$joinType = $optional ? Join::TYPE_LEFT : Join::TYPE_INNER;
+			$firstComponent = ltrim($firstComponent, "?");
+
+			list($field) = $this->getElementsForProperty($firstComponent, $descriptor, $previous);
+
+			if (isset($descriptor->one[$firstComponent])) {
+				$nextDescriptor = Descriptor::getInstance($descriptor->one[$firstComponent]['class']);
 			} else {
 				$nextDescriptor = $descriptor;
 			}
+
 			if ($previous) {
 				$prev = end($previous);
 				$joins[] = array($prev['field'], $field);
 			} else {
 				$pk = $nextDescriptor->getBackendPK();
-				$joins[] = array($field, new Field(reset($pk), $this->getCollection($nextDescriptor, array(array('field'=>$field, 'descriptor'=>$descriptor)))));
+				$joins[] = array($field, new Field(reset($pk), $this->getCollection($nextDescriptor, array(array('field'=>$field, 'descriptor'=>$descriptor)))), $joinType);
 			}
+
 			$previous[] = array('field'=>$field, 'descriptor'=>$descriptor);
 			return $this->getElementsForPath(join(".", array_slice($components, 1)), $nextDescriptor, $previous, $joins);
 		}

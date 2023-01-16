@@ -28,9 +28,24 @@ class SimpleStrategy implements MappingStrategy {
 		}
 	}
 	
-	function update(Entity $entity) {
+	function update(Entity $entity, $allFields = false) {
+		$values = ORMHelper::getPersistedValues($entity, true);
+
+		if (!$allFields) {
+			$record = $entity->getEntityRawRecord();
+			$diff = [];
+
+			foreach ($values as $k=>$v) {
+				if ($v !== $record[$k]) {
+					$diff[$k] = $v;
+				}
+			}
+
+			$values = $diff;
+		}
+
 		$entity->getDataSource()->update(
-			ORMHelper::getPersistedValues($entity, true),
+			$values,
 			$entity->getInstanceCriteria()
 		);
 	}

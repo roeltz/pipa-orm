@@ -5,7 +5,7 @@ namespace Pipa\ORM;
 interface MappingStrategy {
 	function save(Entity $entity);
 	function saveMultiple(array $entities);
-	function update(Entity $entity);
+	function update(Entity $entity, $allFields = false);
 	function delete(Entity $entity);
 
 	function expand(ORMCriteria $criteria, array &$optional = null);

@@ -17,6 +17,7 @@ abstract class Entity implements HasPrimaryKey {
 	static $batchInsert = array();
 	static $namespacedDataSources = array();
 	private $record;
+	private $rawRecord;
 
 	static function find($_ = null) {
 		return self::getCriteria()
@@ -105,7 +106,7 @@ abstract class Entity implements HasPrimaryKey {
 	function cast(array $record) {
 		list($values, $innerRecord, $bring, $unset) = ORMHelper::getCastInformation(self::getDescriptor(), $record);
 
-		$descriptor = $this->getDescriptor();
+		$this->rawRecord = $record;
 		$this->record = $innerRecord;
 
 		foreach($values as $property=>$value)
@@ -171,8 +172,8 @@ abstract class Entity implements HasPrimaryKey {
 		unset(self::$batchInsert[get_called_class()]);
 	}
 
-	function update() {
-		self::getMappingStrategy()->update($this);
+	function update($all = false) {
+		self::getMappingStrategy()->update($this, $all);
 		ORMHelper::setComputed($this);
 	}
 
@@ -197,5 +198,9 @@ abstract class Entity implements HasPrimaryKey {
 
 	function getEntityRecord() {
 		return $this->record;
+	}
+
+	function getEntityRawRecord() {
+		return $this->rawRecord;
 	}
 }

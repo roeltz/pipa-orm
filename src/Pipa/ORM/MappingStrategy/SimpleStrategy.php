@@ -44,7 +44,11 @@ class SimpleStrategy implements MappingStrategy {
 			$values = $diff;
 		}
 
-		$entity->getDataSource()->update(
+		if (!count($values)) {
+			return 0;
+		}
+
+		return $entity->getDataSource()->update(
 			$values,
 			$entity->getInstanceCriteria()
 		);

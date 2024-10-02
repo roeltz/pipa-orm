@@ -164,7 +164,7 @@ class RelationalStrategy extends SimpleStrategy {
 
 			if ($previous) {
 				$prev = end($previous);
-				$joins[] = array($prev['field'], $field);
+				$joins[] = array($prev['field'], $field, $joinType);
 			} else {
 				$pk = $nextDescriptor->getBackendPK();
 				$joins[] = array($field, new Field(reset($pk), $this->getCollection($nextDescriptor, array(array('field'=>$field, 'descriptor'=>$descriptor)))), $joinType);

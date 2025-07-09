@@ -35,6 +35,7 @@ class Descriptor {
 	public $base;
 	public $class;
 	public $collection;
+	public $sourceCollection = [];
 	public $dataSource = "default";
 	public $discriminator;
 	public $embeddedClass = false;
